@@ -1,13 +1,14 @@
-const mainContainer = document.getElementById("main-content");
+const mainContainer = document.getElementById("content");
 
 mainContainer.innerHTML="";
 
 
 export function roomStatus() {
     const getRoomStatus = '/api/auditoriums/1/status';
-
-    fetch(getRoomStatus)
+    const data = fetch(getRoomStatus)
         .then(response => response.json())
         .then(data => console.log(data));
+
+
 }
-roomStatus();
+//roomStatus();
