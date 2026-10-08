@@ -1,4 +1,6 @@
 import * as Views from './routes.js'
+import * as Searchbar from './bookingsearch.js'
+import * as EmployeeManagement from './employeeManagement.js'
 
 const appDiv = document.getElementById('content');
 
@@ -21,9 +23,13 @@ const routes = {
     '#/profile': Views.getProfile,
     '#/login': Views.getLogin,
     '#/employee': Views.getEmployeePage,
-    '#/auditoriumStatus': Views.getAuditoriumStatus
+    '#/auditoriumStatus': Views.getAuditoriumStatus,
+    '#/bookingSearch': Views.getBookingSearch,
 }
+
 function setupEventListeners() {
+    let hash = window.location.hash || '#/'
+    if (hash === '#') hash = '#/';
 
     // Routing
     window.addEventListener('hashchange', handleRoute);
@@ -36,6 +42,12 @@ function setupEventListeners() {
         }
 
     })
+    if (hash === '#/bookingSearch') {
+        const searchForm = document.getElementById('search-booking-form');
+        if (searchForm) {
+            searchForm.addEventListener('submit', Searchbar.handleBookingSearchSubmit);
+        };
+    }
 }
 
 function updateState(newState) {

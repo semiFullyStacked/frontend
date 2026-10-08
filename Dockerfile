@@ -1,7 +1,6 @@
 FROM nginx:alpine
 
 LABEL authors="David"
-
 COPY . /usr/share/nginx/html
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
