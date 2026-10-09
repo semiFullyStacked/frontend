@@ -1,6 +1,7 @@
 import * as Views from './routes.js'
 import * as Searchbar from './bookingsearch.js'
 import * as EmployeeManagement from './employeeManagement.js'
+import * as AuditoriumManagement from './auditoriumManagement.js'
 
 const appDiv = document.getElementById('content');
 let routeRequestId = 0;
@@ -30,6 +31,9 @@ async function handleRoute() {
     }
     if (hash === '#/employeeManagement') {
         EmployeeManagement.setupEmployeeManagement(handleRoute);
+    }
+    if (hash === '#/auditoriumStatus') {
+        AuditoriumManagement.setupAuditoriumManagement(handleRoute);
     }
 }
 

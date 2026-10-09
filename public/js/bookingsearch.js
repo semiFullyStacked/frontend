@@ -1,62 +1,123 @@
+let searchRequestId = 0;
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[character]);
+}
+
+function formatDateTime(value) {
+    if (!value) {
+        return '—';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return 'Invalid date';
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    }).format(date);
+}
+
+function formatPrice(value) {
+    if (value == null || !Number.isFinite(Number(value))) {
+        return 'N/A';
+    }
+
+    return new Intl.NumberFormat('da-DK', {
+        style: 'currency',
+        currency: 'DKK'
+    }).format(Number(value));
+}
+
+function renderBooking(booking) {
+    const seats = Array.isArray(booking.seats) && booking.seats.length
+        ? booking.seats.map(seat => {
+            const name = [seat.seatCode, seat.ticketTypeName]
+                .filter(Boolean)
+                .map(escapeHtml)
+                .join(' — ');
+            return `${name || 'Seat'} (${escapeHtml(formatPrice(seat.price))})`;
+        }).join(', ')
+        : 'N/A';
+
+    return `
+      <div class="card bg-light border-0 p-3">
+        <h2 class="h6 text-primary fw-bold mb-2">
+          Booking Details (#${escapeHtml(booking.bookingId ?? 'N/A')})
+        </h2>
+        <ul class="list-unstyled small mb-0">
+          <li><strong>Movie:</strong> ${escapeHtml(booking.movieTitle || 'N/A')}</li>
+          <li><strong>Showing:</strong> ${escapeHtml(formatDateTime(booking.showingStart))}</li>
+          <li><strong>Auditorium:</strong> ${escapeHtml(booking.auditoriumName || 'N/A')}</li>
+          <li><strong>Seats:</strong> ${seats}</li>
+          <li><strong>Customer:</strong> ${escapeHtml(booking.customerName || 'N/A')}</li>
+          <li><strong>Email:</strong> ${escapeHtml(booking.customerEmail || 'N/A')}</li>
+          <li><strong>Total Price:</strong> ${escapeHtml(formatPrice(booking.totalPrice))}</li>
+          <li><strong>Ticket QR token:</strong> ${escapeHtml(booking.qrCode || 'N/A')}</li>
+        </ul>
+      </div>
+    `;
+}
+
+function showMessage(container, message, type = 'danger') {
+    container.innerHTML = `<div class="alert alert-${type} py-2 small mb-0" role="status">${escapeHtml(message)}</div>`;
+}
+
 export async function handleBookingSearchSubmit(event) {
-    // 1. Prevent default full page refresh
     event.preventDefault();
 
-    const bookingId = document.getElementById('query').value;
-    console.log(bookingId);
+    const form = event.currentTarget;
+    const bookingIdInput = form.elements.namedItem('query');
     const resultContainer = document.getElementById('booking-result');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const bookingId = Number(bookingIdInput.value);
 
-    // Show loading indicator
-    resultContainer.innerHTML = `
-    <div class="text-center py-3">
-      <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-      <span class="ms-2 text-muted">Searching database...</span>
-    </div>
-  `;
+    if (!Number.isSafeInteger(bookingId) || bookingId < 1) {
+        showMessage(resultContainer, 'Enter a valid positive booking ID.', 'warning');
+        bookingIdInput.focus();
+        return;
+    }
+
+    const requestId = ++searchRequestId;
+    submitButton.disabled = true;
+    resultContainer.setAttribute('aria-busy', 'true');
+    showMessage(resultContainer, 'Searching for booking…', 'info');
 
     try {
         const response = await fetch(`/api/bookings/${bookingId}/ticket`);
 
         if (!response.ok) {
             if (response.status === 404) {
-                resultContainer.innerHTML = `
-          <div class="alert alert-warning py-2 small mb-0">
-            No booking found with ID <strong>#${bookingId}</strong>.
-          </div>
-        `;
+                showMessage(resultContainer, `No booking found with ID #${bookingId}.`, 'warning');
                 return;
             }
-            throw new Error(`Server error: ${response.status}`);
+
+            const details = await response.text();
+            throw new Error(`Server returned ${response.status}: ${details || response.statusText}`);
         }
 
         const booking = await response.json();
-
-  resultContainer.innerHTML = `
-  <div class="card bg-light border-0 p-3">
-    <h5 class="h6 text-primary fw-bold mb-2">
-      Booking Details (#${booking.bookingId})
-    </h5>
-
-    <ul class="list-unstyled small mb-0">
-      <li><strong>Movie:</strong> ${booking.movieTitle ?? 'N/A'}</li>
-      <li><strong>Auditorium:</strong> ${booking.auditoriumName ?? 'N/A'}</li>
-      <li><strong>Seats:</strong> ${
-          booking.seats?.map(seat => seat.seatCode).join(', ') || 'N/A'
-      }</li>
-      <li><strong>Customer:</strong> ${booking.customerName ?? 'N/A'}</li>
-      <li><strong>Email:</strong> ${booking.customerEmail ?? 'N/A'}</li>
-      <li><strong>Total Price:</strong> ${booking.totalPrice ?? 0}</li>
-    </ul>
-  </div>
-`;
-
+        if (requestId === searchRequestId) {
+            resultContainer.innerHTML = renderBooking(booking);
+        }
     } catch (error) {
-        console.error('Search error:', error);
-        resultContainer.innerHTML = `
-      <div class="alert alert-danger py-2 small mb-0">
-        Failed to communicate with the backend server.
-      </div>
-    `;
+        console.error('Booking search failed:', error);
+        if (requestId === searchRequestId) {
+            showMessage(resultContainer, `Booking search failed: ${error.message}`);
+        }
+    } finally {
+        if (requestId === searchRequestId) {
+            submitButton.disabled = false;
+            resultContainer.setAttribute('aria-busy', 'false');
+        }
     }
 }
 

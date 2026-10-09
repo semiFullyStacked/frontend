@@ -16,6 +16,22 @@ export function getEmployeePage() {
     </ol></p>`
 }
 
+function formatDateTime(value) {
+    if (!value) {
+        return '—';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return 'Invalid date';
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    }).format(date);
+}
+
 export async function getEmployeeManagement() {
     try {
         const response = await fetch('/api/employees');
@@ -35,7 +51,8 @@ export async function getEmployeeManagement() {
                 <td>
                     <button
                         class="btn btn-sm btn-outline-primary edit-roles-btn"
-                        data-id="${emp.id}">
+                        data-id="${emp.id}"
+                        data-roles="${emp.roleNames.join(',')}">
                         Roles
                     </button>
 
@@ -148,6 +165,38 @@ export async function getEmployeeManagement() {
 
             </div>
 
+            <dialog id="edit-roles-dialog" class="p-0 border-0 rounded shadow">
+                <form id="edit-roles-form" class="p-4">
+                    <h2 class="h5">Edit employee roles</h2>
+                    <p>Select the complete set of roles for this employee.</p>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="roleNames" value="ServiceDesk" id="role-service-desk">
+                        <label class="form-check-label" for="role-service-desk">Service Desk</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="roleNames" value="Cleaner" id="role-cleaner">
+                        <label class="form-check-label" for="role-cleaner">Cleaner</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="roleNames" value="Manager" id="role-manager">
+                        <label class="form-check-label" for="role-manager">Manager</label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="roleNames" value="Admin" id="role-admin">
+                        <label class="form-check-label" for="role-admin">Admin</label>
+                    </div>
+
+                    <p class="small text-muted">Roles replace the employee's current roles. Selecting none removes all roles and removes the employee from this staff list.</p>
+                    <p id="edit-roles-message" class="text-danger mb-3" role="alert" aria-live="polite"></p>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" id="cancel-role-edit">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save roles</button>
+                    </div>
+                </form>
+            </dialog>
+
         </div>
         `;
 
@@ -176,15 +225,20 @@ export async function getAuditoriumStatus() {
         <th scope="row">${aud.auditoriumId}</th>
         <td>${aud.auditoriumName}</td>
         <td>${aud.seatCount} seats</td>
-        <td>${aud.currentMovieTitle}</td>
-        <td>${aud.currentShowingEndsAt}</td>
+        <td>${aud.currentMovieTitle || '—'}</td>
+        <td>${formatDateTime(aud.currentShowingEndsAt)}</td>
         <td>
-          <span class="badge ${aud.status === 'true' ? 'bg-success' : 'bg-danger'}">
-            ${aud.needsCleaning}
+          <span class="badge ${aud.needsCleaning ? 'bg-danger' : 'bg-success'}">
+            ${aud.needsCleaning ? 'Needs cleaning' : 'Clean'}
           </span>
         </td>
         <td>
-          <button class="btn btn-sm btn-outline-secondary">Details</button>
+          <button
+            class="btn btn-sm btn-outline-primary mark-cleaned-btn"
+            data-auditorium-id="${aud.auditoriumId}"
+            ${aud.needsCleaning ? '' : 'disabled'}>
+            Mark cleaned
+          </button>
         </td>
       </tr>
     `).join('');
@@ -198,6 +252,8 @@ export async function getAuditoriumStatus() {
           </div>
           <a href="#/employee" class="btn btn-outline-secondary btn-sm">← Back to Employee Hub</a>
         </div>
+
+        <div id="auditorium-action-message" class="alert alert-danger" role="alert" aria-live="polite" hidden></div>
 
         <div class="card shadow-sm border-0">
           <div class="card-body p-0">
@@ -215,7 +271,7 @@ export async function getAuditoriumStatus() {
                   </tr>
                 </thead>
                 <tbody>
-                  ${tableRows.length > 0 ? tableRows : '<tr><td colspan="5" class="text-center py-4">No auditoriums found.</td></tr>'}
+                  ${tableRows.length > 0 ? tableRows : '<tr><td colspan="7" class="text-center py-4">No auditoriums found.</td></tr>'}
                 </tbody>
               </table>
             </div>
@@ -254,12 +310,12 @@ export function getBookingSearch() {
               <form id="search-form">
                 <div class="mb-3">
                   <label for="query" class="form-label">Booking ID</label>
-                  <input type="number" class="form-control" id="query" name="query" placeholder="e.g. 1042" required />
+                  <input type="number" class="form-control" id="query" name="query" placeholder="e.g. 1042" min="1" step="1" required />
                 </div>
                 <button type="submit" class="btn btn-primary w-100">Search Booking</button>
               </form>
 
-              <div id="booking-result" class="mt-4"></div>
+              <div id="booking-result" class="mt-4" aria-live="polite" aria-atomic="true" aria-busy="false"></div>
             </div>
           </div>
         </div>
@@ -290,5 +346,3 @@ export function getLogin() {
     </div>
   `;
 }
-
-
