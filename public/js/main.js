@@ -1,6 +1,5 @@
 import * as Views from './routes.js'
 import * as Searchbar from './bookingsearch.js'
-import * as EmployeeManagement from './employeeManagement.js'
 
 const appDiv = document.getElementById('content');
 
@@ -17,7 +16,12 @@ async function handleRoute() {
     appContainer.innerHTML = '<p>Loading page...</p>'
     const content = await renderView();
     appContainer.innerHTML = content;
-}
+    if (hash === '#/bookingSearch') {
+const form = document.getElementById('search-form');
+if (form) {
+form.addEventListener('submit',Searchbar.handleBookingSearchSubmit);
+}}}
+
 const routes = {
     '#/': Views.getHomePage,
     '#/profile': Views.getProfile,
@@ -42,12 +46,6 @@ function setupEventListeners() {
         }
 
     })
-    if (hash === '#/bookingSearch') {
-        const searchForm = document.getElementById('search-booking-form');
-        if (searchForm) {
-            searchForm.addEventListener('submit', Searchbar.handleBookingSearchSubmit);
-        };
-    }
 }
 
 function updateState(newState) {

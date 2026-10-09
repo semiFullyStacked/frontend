@@ -15,7 +15,6 @@ export async function handleBookingSearchSubmit(event) {
   `;
 
     try {
-        // 2. Call your Spring Boot API endpoint
         const response = await fetch(`/api/bookings/${bookingId}/ticket`);
 
         if (!response.ok) {
@@ -32,18 +31,24 @@ export async function handleBookingSearchSubmit(event) {
 
         const booking = await response.json();
 
-        // 3. Render the fetched data into the result container
-        resultContainer.innerHTML = `
-      <div class="card bg-light border-0 p-3">
-        <h5 class="h6 text-primary fw-bold mb-2">Booking Details (#${booking.id})</h5>
-        <ul class="list-unstyled small mb-0">
-          <li><strong>Movie:</strong> ${booking.movieTitle || 'N/A'}</li>
-          <li><strong>Auditorium:</strong> ${booking.auditoriumName || 'N/A'}</li>
-          <li><strong>Seats:</strong> ${booking.seatNumbers ? booking.seatNumbers.join(', ') : 'N/A'}</li>
-          <li><strong>Customer Email:</strong> ${booking.customerEmail || 'N/A'}</li>
-        </ul>
-      </div>
-    `;
+  resultContainer.innerHTML = `
+  <div class="card bg-light border-0 p-3">
+    <h5 class="h6 text-primary fw-bold mb-2">
+      Booking Details (#${booking.bookingId})
+    </h5>
+
+    <ul class="list-unstyled small mb-0">
+      <li><strong>Movie:</strong> ${booking.movieTitle ?? 'N/A'}</li>
+      <li><strong>Auditorium:</strong> ${booking.auditoriumName ?? 'N/A'}</li>
+      <li><strong>Seats:</strong> ${
+          booking.seats?.map(seat => seat.seatCode).join(', ') || 'N/A'
+      }</li>
+      <li><strong>Customer:</strong> ${booking.customerName ?? 'N/A'}</li>
+      <li><strong>Email:</strong> ${booking.customerEmail ?? 'N/A'}</li>
+      <li><strong>Total Price:</strong> ${booking.totalPrice ?? 0}</li>
+    </ul>
+  </div>
+`;
 
     } catch (error) {
         console.error('Search error:', error);
