@@ -1,11 +1,13 @@
 import * as Views from './routes.js'
 import * as Searchbar from './bookingsearch.js'
+import * as EmployeeManagement from './employeeManagement.js'
 
 const appDiv = document.getElementById('content');
+let routeRequestId = 0;
 
 async function handleRoute() {
-    const hash = window.location.hash || '#/'
-    console.log(hash);
+    const hash = window.location.hash === '#' ? '#/' : window.location.hash || '#/';
+    const requestId = ++routeRequestId;
     const renderView = routes[hash];
     const appContainer = document.getElementById('content')
 
@@ -15,12 +17,21 @@ async function handleRoute() {
     }
     appContainer.innerHTML = '<p>Loading page...</p>'
     const content = await renderView();
+
+    const currentHash = window.location.hash === '#' ? '#/' : window.location.hash || '#/';
+    if (requestId !== routeRequestId || hash !== currentHash) {
+        return;
+    }
+
     appContainer.innerHTML = content;
+
     if (hash === '#/bookingSearch') {
-const form = document.getElementById('search-form');
-if (form) {
-form.addEventListener('submit',Searchbar.handleBookingSearchSubmit);
-}}}
+        Searchbar.setupBookingSearch();
+    }
+    if (hash === '#/employeeManagement') {
+        EmployeeManagement.setupEmployeeManagement(handleRoute);
+    }
+}
 
 const routes = {
     '#/': Views.getHomePage,
@@ -29,17 +40,13 @@ const routes = {
     '#/employee': Views.getEmployeePage,
     '#/auditoriumStatus': Views.getAuditoriumStatus,
     '#/bookingSearch': Views.getBookingSearch,
+    '#/employeeManagement': Views.getEmployeeManagement
 }
 
 function setupEventListeners() {
-    let hash = window.location.hash || '#/'
-    if (hash === '#') hash = '#/';
-
-    // Routing
     window.addEventListener('hashchange', handleRoute);
     window.addEventListener('load', handleRoute);
 
-    // Dynamic content
     appDiv.addEventListener('click', function (event){
         if (event.target.matches('.button-submit')) {
             handleSubmit(event);
@@ -78,4 +85,3 @@ function handleSubmit(event) {
 
 
 setupEventListeners();
-

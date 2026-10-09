@@ -11,11 +11,154 @@ export function getEmployeePage() {
     <ol>
     <li><a href="#/auditoriumStatus">View auditoriums</a></li>
     <li><a href="#/bookingSearch">Lookup booking ids</a></li>
+    <li><a href="#/employeeManagement">Manage employees</a></li>
     <li>Close down auditoriums</li>
     </ol></p>`
 }
 
+export async function getEmployeeManagement() {
+    try {
+        const response = await fetch('/api/employees');
 
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+
+        const employees = await response.json();
+
+        const rows = employees.map(emp => `
+            <tr>
+                <td>${emp.id}</td>
+                <td>${emp.name}</td>
+                <td>${emp.email}</td>
+                <td>${emp.roleNames.join(', ')}</td>
+                <td>
+                    <button
+                        class="btn btn-sm btn-outline-primary edit-roles-btn"
+                        data-id="${emp.id}">
+                        Roles
+                    </button>
+
+                    <button
+                        class="btn btn-sm btn-outline-danger delete-employee-btn"
+                        data-id="${emp.id}">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        return `
+        <div class="container py-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Employee Management</h1>
+                <a href="#/employee" class="btn btn-outline-secondary btn-sm">← Back</a>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    Create Employee
+                </div>
+
+                <div class="card-body">
+
+                    <form id="create-employee-form">
+
+                        <div class="mb-3">
+                            <label>Name</label>
+                            <input
+                                class="form-control"
+                                id="employee-name"
+                                required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Email</label>
+                            <input
+                                type="email"
+                                class="form-control"
+                                id="employee-email"
+                                required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Password</label>
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="employee-password"
+                                required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Role</label>
+                            <select
+                                class="form-select"
+                                id="employee-role">
+
+                                <option value="Manager">Manager</option>
+                                <option value="Cleaner">Cleaner</option>
+                                <option value="Admin">Admin</option>
+                                <option value="ServiceDesk">Service Desk</option>
+                            
+
+                            </select>
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="btn btn-success">
+                            Create Employee
+                        </button>
+
+                        <p id="employee-form-message" class="text-danger mt-2 mb-0" role="alert" aria-live="polite"></p>
+
+                    </form>
+
+                </div>
+            </div>
+
+            <div class="card">
+
+                <div class="card-header">
+                    Current Employees
+                </div>
+
+                <div class="card-body">
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Roles</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            ${rows}
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+        `;
+
+    } catch (err) {
+        return `
+            <div class="alert alert-danger">
+                Failed to load employees.
+            </div>
+        `;
+    }
+}
 
 
 export async function getAuditoriumStatus() {
@@ -147,7 +290,5 @@ export function getLogin() {
     </div>
   `;
 }
-
-
 
 

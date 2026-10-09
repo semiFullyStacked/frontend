@@ -59,3 +59,10 @@ export async function handleBookingSearchSubmit(event) {
     `;
     }
 }
+
+export function setupBookingSearch() {
+    const form = document.getElementById('search-form');
+    if (form) {
+        form.addEventListener('submit', handleBookingSearchSubmit);
+    }
+}
