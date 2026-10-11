@@ -2,6 +2,9 @@ import * as Views from './routes.js'
 import * as Searchbar from './bookingsearch.js'
 import * as EmployeeManagement from './employeeManagement.js'
 import * as AuditoriumManagement from './auditoriumManagement.js'
+import * as csrfHelper from './api.js';
+
+import {login} from "./login.js";
 
 const appDiv = document.getElementById('content');
 let routeRequestId = 0;
@@ -17,7 +20,17 @@ async function handleRoute() {
         return;
     }
     appContainer.innerHTML = '<p>Loading page...</p>'
-    const content = await renderView();
+    let content;
+    try {
+        content = await renderView();
+    } catch (err) {
+        if (err instanceof HttpError && err.status === 403) {
+            content = Views.getForbiddenPage();
+        } else {
+            console.error('Route failed', hash, err);
+            content = '<p>Something went wrong loading this page.</p>';
+        }
+    }
 
     const currentHash = window.location.hash === '#' ? '#/' : window.location.hash || '#/';
     if (requestId !== routeRequestId || hash !== currentHash) {
@@ -35,7 +48,24 @@ async function handleRoute() {
     if (hash === '#/auditoriumStatus') {
         AuditoriumManagement.setupAuditoriumManagement(handleRoute);
     }
+    if (hash === '#/login') {
+        const loginForm = document.getElementById('login-form');
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const {username, password} = Object.fromEntries(new FormData(event.target));
+            try {
+                if (await login(username, password)) {
+                    location.hash = '#/';
+                } else {
+                    appContainer.querySelector('#login-error').hidden = false;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    }
 }
+
 
 const routes = {
     '#/': Views.getHomePage,
@@ -51,7 +81,7 @@ function setupEventListeners() {
     window.addEventListener('hashchange', handleRoute);
     window.addEventListener('load', handleRoute);
 
-    appDiv.addEventListener('click', function (event){
+    appDiv.addEventListener('click', function (event) {
         if (event.target.matches('.button-submit')) {
             handleSubmit(event);
         }
@@ -87,5 +117,10 @@ function handleSubmit(event) {
 }
 
 
-
+try {
+    await csrfHelper.initCsrf();
+} catch (err) {
+    console.error('CSRF init failed', err);
+}
 setupEventListeners();
+handleRoute();

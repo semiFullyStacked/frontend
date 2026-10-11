@@ -1,12 +1,13 @@
 export function getHomePage() {
     return '<h1> Welcome to SmartBios homepage.</h1> <p>This is the Smartbio home page</p>'
 }
+
 export function getProfile() {
     return '<h1> Welcome to Smartbio profile page.</h1> <p>This is for the profile page</p>'
 }
 
 export function getEmployeePage() {
-    return` <h1> Welcome to the employee page</h1>
+    return ` <h1> Welcome to the employee page</h1>
     <p>On this page you can do the following actions: 
     <ol>
     <li><a href="#/auditoriumStatus">View auditoriums</a></li>
@@ -200,14 +201,18 @@ export async function getEmployeeManagement() {
         </div>
         `;
 
-    } catch (err) {
+    } catch (err){
+
+    if (err instanceof HttpError) throw err;
+    console.error(err);
+    {
         return `
             <div class="alert alert-danger">
                 Failed to load employees.
             </div>
         `;
     }
-}
+}}
 
 
 export async function getAuditoriumStatus() {
@@ -324,25 +329,40 @@ export function getBookingSearch() {
   `;
 }
 
+
 export function getLogin() {
     return `
-    <div class="container">
-      <h1>Login to SmartBio</h1>
-      <p>Please enter your credentials to access your account.</p>
-      
-      <form id="login-form">
-        <div class="form-group">
-          <label for="email">Email address</label>
-          <input type="email" id="email" name="email" placeholder="name@example.com" required />
-        </div>
+   <main class="container my-auto py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h1 class="h3 mb-4 fw-bold text-center">Sign In</h1>
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" placeholder="••••••••" required />
+                    <form id="login-form" method="post" action="/login">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required autofocus>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-
-        <button type="submit" class="btn-login">Log In</button>
-      </form>
     </div>
-  `;
+</main>  
+    `
+}
+export function getForbiddenPage() {
+    return `<div class="text-center py-5">
+      <h1 class="display-5">403</h1>
+      <p>You don't have permission to view this page.</p>
+      <a href="#/">Back to home</a>
+    </div>`;
 }
