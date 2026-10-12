@@ -1,3 +1,4 @@
+import {api, HttpError} from '../helpers/api.js'
 let currentSeatMap = null;
 let currentShowingId = null;
 let selectedSeats = [];
@@ -11,13 +12,13 @@ export async function getSeatPicker(params) {
     }
 
     try {
-        const response = await (`/api/showings/${showingId}/seatmap`);
+        const response = await api(`/api/showings/${showingId}/seatmap`);
 
         if (!response.ok) {
             if (response.status === 404) {
                 return `<div class="container py-4"><div class="alert alert-warning">That showing doesn't exist.</div></div>`;
             }
-            throw new Error(`Server error: ${response.status}`);
+            throw new HttpError(`Server error: ${response.status}`);
         }
 
         const seatMap = await response.json();
@@ -67,6 +68,7 @@ export async function getSeatPicker(params) {
         `;
 
     } catch (error) {
+        if (error instanceof HttpError) throw error
         console.error('Failed to load seat map:', error);
         return `
             <div class="container py-4">

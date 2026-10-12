@@ -18,8 +18,9 @@ export async function api(url, options = {}) {
             ...options.headers
         }
     });
+    if (res.status === 401) throw new HttpError(res.status);
     //Throw some HttpErrors here
-    if (res.status === 403) throw new HttpError(403);
+    if (res.status === 403) throw new HttpError(res.status);
     return res;
 }
 
