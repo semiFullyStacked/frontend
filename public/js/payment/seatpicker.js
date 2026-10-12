@@ -11,7 +11,7 @@ export async function getSeatPicker(params) {
     }
 
     try {
-        const response = await fetch(`/api/showings/${showingId}/seatmap`);
+        const response = await (`/api/showings/${showingId}/seatmap`);
 
         if (!response.ok) {
             if (response.status === 404) {
