@@ -29,6 +29,36 @@
     max-width: 480px;
 }
 
+.login-btn {
+display: block;
+}
+
+.logout-btn {
+    display: none;
+}
+
+.employee-page {
+    display: none;
+}
+
+/* Logged-in state: Hide login, show logout */
+body.logged-in .login-btn {
+    display: none;
+}
+
+body.logged-in .employee-page {
+    display: block;
+}
+
+body.logged-in .logout-btn {
+    display: block;
+}
+
+body.has-employee-role .employee-page {
+    display: block;
+}
+
+
 .seat-button {
     padding: 0.5rem;
     border: 1px solid #212529;

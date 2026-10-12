@@ -1,5 +1,4 @@
 FROM nginx:alpine
-
 LABEL authors="David"
 COPY . /usr/share/nginx/html
 
