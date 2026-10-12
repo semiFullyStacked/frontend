@@ -1,12 +1,12 @@
 import * as Views from './routes.js'
-import * as Searchbar from './bookingsearch.js'
-import * as SeatPicker from "./seatpicker.js";
-import * as Checkout from './checkout.js'
-import * as EmployeeManagement from './employeeManagement.js'
-import * as AuditoriumManagement from './auditoriumManagement.js'
-import * as csrfHelper from './api.js';
-import {HttpError} from './api.js';
-import {login, logout} from "./login.js";
+import * as Searchbar from './employee/bookingsearch.js'
+import * as SeatPicker from "./payment/seatpicker.js";
+import * as Checkout from './payment/checkout.js'
+import * as EmployeeManagement from './employee/employeeManagement.js'
+import * as AuditoriumManagement from './employee/auditoriumManagement.js'
+import * as csrfHelper from './helpers/api.js';
+import {HttpError} from './helpers/api.js';
+import {login, logout} from "./auth/login.js";
 
 // Constants
 const appDiv = document.getElementById('content');
@@ -14,9 +14,11 @@ let routeRequestId = 0;
 let isLoggedIn = false;
 
 async function handleRoute() {
-    const hash = window.location.hash === '#' ? '#/' : window.location.hash || '#/';
+    const fullHash = window.location.hash === '#' ? '#/' : window.location.hash || '#/';
     const requestId = ++routeRequestId;
-    const renderView = routes[hash];
+    const [path, queryString] = fullHash.split('?');
+    const params = new URLSearchParams(queryString || '');
+    const renderView = routes[path];
 
     if (!renderView) {
         appDiv.innerHTML = '<h1>404 - Page not found</h1>'
@@ -25,33 +27,33 @@ async function handleRoute() {
     appDiv.innerHTML = '<p>Loading page...</p>'
     let content;
     try {
-        content = await renderView();
+        content = await renderView(params);
     } catch (err) {
         if (err instanceof HttpError && err.status === 403) {
             content = Views.getForbiddenPage();
         } else {
-            console.error('Route failed', hash, err);
+            console.error('Route failed', fullHash, err);
             content = '<p>Something went wrong loading this page.</p>';
         }
     }
 
     const currentHash = window.location.hash === '#' ? '#/' : window.location.hash || '#/';
-    if (requestId !== routeRequestId || hash !== currentHash) {
+    if (requestId !== routeRequestId || fullHash !== currentHash) {
         return;
     }
 
     appDiv.innerHTML = content;
 
-    if (hash === '#/bookingSearch') {
+    if (fullHash === '#/bookingSearch') {
         Searchbar.setupBookingSearch();
     }
-    if (hash === '#/employeeManagement') {
+    if (fullHash === '#/employeeManagement') {
         EmployeeManagement.setupEmployeeManagement(handleRoute);
     }
-    if (hash === '#/auditoriumStatus') {
+    if (fullHash === '#/auditoriumStatus') {
         AuditoriumManagement.setupAuditoriumManagement(handleRoute);
     }
-    if (hash === '#/login') {
+    if (fullHash === '#/login') {
         const loginForm = document.getElementById('login-form');
         loginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -70,26 +72,33 @@ async function handleRoute() {
             }
         });
     }
-    if (hash === '#/logout') {
+    if (fullHash === '#/logout') {
         const logoutSubmit = document.getElementById("logout-submit");
         logoutSubmit.addEventListener('click', async (event) => {
             event.preventDefault();
 
             try {
                 await logout();
-                await loginChecker();
                 isLoggedIn = false;
+                await loginChecker();
                 updateUI();
                 location.hash = '#/';
             } catch (err) {
                 console.error(err);
-                appDiv.querySelector('#logout-error'.hidden = false);
+                appDiv.querySelector('#logout-error').hidden = false;
             }
 
         })
     }
-}
 
+    if (fullHash === '#/bookingSearch') {
+        const searchForm = document.getElementById('search-booking-form');
+        if (searchForm) {
+            searchForm.addEventListener('submit', Searchbar.handleBookingSearchSubmit);
+        }
+        ;
+    }
+}
 
 const routes = {
     '#/': Views.getHomePage,
@@ -108,30 +117,18 @@ const routes = {
 function setupHashRouting() {
     window.addEventListener('hashchange', handleRoute);
     window.addEventListener('load', handleRoute);
-
-    // Dynamic content
-    appDiv.addEventListener('click', function (event){
-        if (event.target.matches('.button-submit')) {
-            handleSubmit(event);
-}
+    appDiv.addEventListener('click', function (event) {
         if (window.location.hash.startsWith('#/seats')) {
             SeatPicker.handleSeatPickerClick(event);
         }
-
     })
-    if (hash === '#/bookingSearch') {
-        const searchForm = document.getElementById('search-booking-form');
-        if (searchForm) {
-            searchForm.addEventListener('submit', Searchbar.handleBookingSearchSubmit);
-        };
-    }
-
     appDiv.addEventListener('submit', function (event) {
         if (event.target.id === 'checkout-form') {
             Checkout.handleCheckoutSubmit(event);
         }
     })
 }
+
 export async function loginChecker() {
     document.body.id = '';
     [...document.body.classList]
@@ -139,7 +136,7 @@ export async function loginChecker() {
         .forEach(c => document.body.classList.remove(c));
 
     try {
-        const response = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        const response = await fetch('/api/auth/me', {credentials: 'same-origin'});
         if (!response.ok) return;
         const user = await response.json();
         document.body.id = 'logged-in';
@@ -149,7 +146,7 @@ export async function loginChecker() {
     } catch (error) {
         console.error('Session check failed', error);
     }
-    appDiv.innerHTML = routes[window.location.hash || '#/']();
+ //   appDiv.innerHTML = routes[window.location.hash || '#/']();
 }
 
 function updateUI() {
@@ -165,6 +162,7 @@ async function startUp() {
     }
     setupHashRouting();
     await handleRoute();
+
 }
 
 await startUp();
