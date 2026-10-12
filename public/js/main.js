@@ -1,5 +1,7 @@
 import * as Views from './routes.js'
 import * as Searchbar from './bookingsearch.js'
+import * as SeatPicker from "./seatpicker.js";
+import * as Checkout from './checkout.js'
 import * as EmployeeManagement from './employeeManagement.js'
 import * as AuditoriumManagement from './auditoriumManagement.js'
 import * as csrfHelper from './api.js';
@@ -96,6 +98,9 @@ const routes = {
     '#/employee': Views.getEmployeePage,
     '#/auditoriumStatus': Views.getAuditoriumStatus,
     '#/bookingSearch': Views.getBookingSearch,
+    '#/seats': Views.getSeatPicker,
+    '#/checkout': Views.getCheckoutPage,
+    '#/ticket': Views.getTicketPage,
     '#/employeeManagement': Views.getEmployeeManagement,
     '#/logout': Views.getLogout
 }
@@ -103,8 +108,30 @@ const routes = {
 function setupHashRouting() {
     window.addEventListener('hashchange', handleRoute);
     window.addEventListener('load', handleRoute);
-}
 
+    // Dynamic content
+    appDiv.addEventListener('click', function (event){
+        if (event.target.matches('.button-submit')) {
+            handleSubmit(event);
+}
+        if (window.location.hash.startsWith('#/seats')) {
+            SeatPicker.handleSeatPickerClick(event);
+        }
+
+    })
+    if (hash === '#/bookingSearch') {
+        const searchForm = document.getElementById('search-booking-form');
+        if (searchForm) {
+            searchForm.addEventListener('submit', Searchbar.handleBookingSearchSubmit);
+        };
+    }
+
+    appDiv.addEventListener('submit', function (event) {
+        if (event.target.id === 'checkout-form') {
+            Checkout.handleCheckoutSubmit(event);
+        }
+    })
+}
 export async function loginChecker() {
     document.body.id = '';
     [...document.body.classList]
@@ -122,6 +149,7 @@ export async function loginChecker() {
     } catch (error) {
         console.error('Session check failed', error);
     }
+    appDiv.innerHTML = routes[window.location.hash || '#/']();
 }
 
 function updateUI() {

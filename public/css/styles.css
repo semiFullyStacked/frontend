@@ -1,3 +1,33 @@
+.poster-placeholder {
+    width: 160px;
+    height: 220px;
+    border: 2px solid #212529;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+    background-color: #f8f9fa;
+}
+
+.date-column-header {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.showtime-entry {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.seat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 0.5rem;
+    max-width: 480px;
+}
 
 .login-btn {
 display: block;
@@ -28,3 +58,38 @@ body.has-employee-role .employee-page {
     display: block;
 }
 
+
+.seat-button {
+    padding: 0.5rem;
+    border: 1px solid #212529;
+    background-color: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.seat-reserved {
+    background-color: #dee2e6;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.seat-available:hover {
+    background-color: #e7f1ff;
+}
+
+.seat-selected {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+}
+
+.qr-placeholder {
+    width: 160px;
+    height: 160px;
+    border: 2px solid #212529;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+}

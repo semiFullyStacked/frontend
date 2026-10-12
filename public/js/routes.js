@@ -1,3 +1,8 @@
+export { getHomePage } from './homepage.js';
+export { getSeatPicker } from './seatpicker.js';
+export { getCheckoutPage } from './checkout.js';
+export { getTicketPage } from './ticket.js';
+
 export function getHomePage() {
     return '<h1> Welcome to SmartBios homepage.</h1> <p>This is the Smartbio home page</p>'
 }
