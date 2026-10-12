@@ -1,8 +1,8 @@
-import {HttpError} from "../helpers/api.js";
+import {HttpError, api} from "../helpers/api.js";
 
 export async function getEmployeeManagement() {
     try {
-        const response = await fetch('/api/employees');
+        const response = await api('/api/employees');
 
         if (!response.ok) {
             throw new Error(`Server error: ${response.status}`);
