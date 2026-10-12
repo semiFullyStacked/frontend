@@ -1,13 +1,16 @@
 import * as Views from './routes.js'
 import * as Searchbar from './bookingsearch.js'
-import * as EmployeeManagement from './employeeManagement.js'
+import * as SeatPicker from "./seatpicker.js";
+import * as Checkout from './checkout.js'
 
 const appDiv = document.getElementById('content');
 
 async function handleRoute() {
-    const hash = window.location.hash || '#/'
-    console.log(hash);
-    const renderView = routes[hash];
+    const fullHash = window.location.hash || '#/';
+    const [path, queryString] = fullHash.split('?');
+    const params = new URLSearchParams(queryString || '');
+
+    const renderView = routes[path];
     const appContainer = document.getElementById('content')
 
     if (!renderView) {
@@ -15,7 +18,7 @@ async function handleRoute() {
         return;
     }
     appContainer.innerHTML = '<p>Loading page...</p>'
-    const content = await renderView();
+    const content = await renderView(params);
     appContainer.innerHTML = content;
 }
 const routes = {
@@ -25,6 +28,9 @@ const routes = {
     '#/employee': Views.getEmployeePage,
     '#/auditoriumStatus': Views.getAuditoriumStatus,
     '#/bookingSearch': Views.getBookingSearch,
+    '#/seats': Views.getSeatPicker,
+    '#/checkout': Views.getCheckoutPage,
+    '#/ticket': Views.getTicketPage,
 }
 
 function setupEventListeners() {
@@ -40,6 +46,9 @@ function setupEventListeners() {
         if (event.target.matches('.button-submit')) {
             handleSubmit(event);
         }
+        if (window.location.hash.startsWith('#/seats')) {
+            SeatPicker.handleSeatPickerClick(event);
+        }
 
     })
     if (hash === '#/bookingSearch') {
@@ -48,6 +57,12 @@ function setupEventListeners() {
             searchForm.addEventListener('submit', Searchbar.handleBookingSearchSubmit);
         };
     }
+
+    appDiv.addEventListener('submit', function (event) {
+        if (event.target.id === 'checkout-form') {
+            Checkout.handleCheckoutSubmit(event);
+        }
+    })
 }
 
 function updateState(newState) {
@@ -80,4 +95,3 @@ function handleSubmit(event) {
 
 
 setupEventListeners();
-
