@@ -6,6 +6,10 @@ Backenden findes i et separat repository: [semiFullyStacked/backend](https://git
 
 Link til frontenden: [frontend](https://frontend.gentlesmoke-03ba2725.swedencentral.azurecontainerapps.io/#/)
 
+## Brugere
+John Cleaner - john@smartbio.dk
+Sarah Manager - sarah@smartbio.dk
+
 ## Sådan hænger det sammen
 
 ```
