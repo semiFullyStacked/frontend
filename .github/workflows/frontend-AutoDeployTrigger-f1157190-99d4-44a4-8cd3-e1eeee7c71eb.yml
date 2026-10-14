@@ -5,7 +5,7 @@ on:
   # Automatically trigger it when detected changes in repo
   push:
     branches: 
-      [ main ]
+      [ release ]
     paths:
     - '**'
     - '.github/workflows/frontend-AutoDeployTrigger-f1157190-99d4-44a4-8cd3-e1eeee7c71eb.yml'
