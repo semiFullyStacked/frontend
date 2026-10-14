@@ -9,11 +9,26 @@ Link til frontenden: [frontend](https://frontend.gentlesmoke-03ba2725.swedencent
 ## Sådan hænger det sammen
 
 ```
-Browser ──► nginx (frontend-container, port 80)
-              │
-              ├─ /                      → statiske filer fra public/ (SPA)
-              └─ /api, /login,
-                 /logout, /error        → proxy til backend-containeren
+.
+├── .github/workflows/   # CI/CD-workflows (GitHub Actions)
+├── public/              # Selve websitet (statiske filer)
+│   ├── index.html       # Eneste HTML-side (SPA)
+│   ├── css/
+│   │   └── styles.css
+│   └── js/
+│       ├── main.js          # Applikationens indgangspunkt
+│       ├── routes.js        # Routing mellem visninger
+│       ├── homepage.js      # Forsiden
+│       ├── auth/            # login.js, logout.js
+│       ├── employee/        # auditoriumManagement.js, bookingsearch.js,
+│       │                    # employee-page.js, employeeManagement.js
+│       ├── errors/          # 403.js
+│       ├── helpers/         # api.js, csrf.js, date-format.js
+│       ├── management/      # manager.js, profile.js
+│       └── payment/         # seatpicker.js, checkout.js, ticket.js
+├── Dockerfile           # nginx-image med site og konfiguration
+├── compose.yml          # Kør frontenden med Docker Compose
+├── nginx.conf           # Serverkonfiguration og proxy-regler
 ```
 
 - Alle statiske filer (HTML, CSS, JavaScript) ligger i `public/` og serveres direkte af nginx.
