@@ -10,6 +10,6 @@ services:
     networks:
       - app-net
 
-networks:
-  app-net:
-    external: true
+#networks:
+#  app-net:
+#    external: true
