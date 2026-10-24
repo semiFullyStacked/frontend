@@ -1,143 +1,155 @@
-import {api, HttpError} from '../helpers/api.js'
-let currentSeatMap = null;
-let currentShowingId = null;
-let selectedSeats = [];
-let seatCount = 0;
+import {html, nothing} from 'lit';
+import {api, HttpError} from '../helpers/api.js';
+import {SmartBioView} from '../helpers/view.js';
 
-export async function getSeatPicker(params) {
-    const showingId = params.get('showingId');
+export class SmartBioSeatPicker extends SmartBioView {
+    static properties = {
+        seatMap: {state: true},
+        selectedSeats: {state: true},
+        seatCount: {state: true},
+        notice: {state: true},
+        loadFailed: {state: true},
+    };
 
-    if (!showingId) {
-        return `<div class="container py-4"><div class="alert alert-warning">No showing selected.</div></div>`;
+    constructor() {
+        super();
+        this.params = new URLSearchParams();
+        this.showingId = null;
+        this.seatMap = null;
+        this.selectedSeats = [];
+        this.seatCount = 0;
+        this.notice = '';
+        this.loadFailed = false;
     }
 
-    try {
-        const response = await api(`/api/showings/${showingId}/seatmap`);
+    connectedCallback() {
+        super.connectedCallback();
+        this.loadSeatMap();
+    }
 
-        if (!response.ok) {
-            if (response.status === 404) {
-                return `<div class="container py-4"><div class="alert alert-warning">That showing doesn't exist.</div></div>`;
-            }
-            throw new HttpError(`Server error: ${response.status}`);
+    async loadSeatMap() {
+        const showingId = this.params.get('showingId');
+
+        if (!showingId) {
+            this.notice = 'No showing selected.';
+            return;
         }
 
-        const seatMap = await response.json();
+        try {
+            const response = await api(`/api/showings/${showingId}/seatmap`);
 
-        // Reset selection state for this fresh render
-        currentSeatMap = seatMap;
-        currentShowingId = showingId;
-        selectedSeats = [];
-        seatCount = 0;
+            if (!response.ok) {
+                if (response.status === 404) {
+                    this.notice = "That showing doesn't exist.";
+                    return;
+                }
+                throw new HttpError(response.status);
+            }
 
-        const seatButtons = seatMap.seats.map(seat => `
-            <button
-                type="button"
-                class="seat-button ${seat.reserved ? 'seat-reserved' : 'seat-available'}"
-                data-seat-code="${seat.seatCode}"
-                ${seat.reserved ? 'disabled' : ''}
-            >
-                ${seat.seatCode}
-            </button>
-        `).join('');
+            this.showingId = showingId;
+            this.seatMap = await response.json();
+        } catch (error) {
+            if (this.handleLoadError(error)) return;
+            console.error('Failed to load seat map:', error);
+            this.loadFailed = true;
+        }
+    }
 
-        return `
+    get availableCount() {
+        return this.seatMap.seats.filter(seat => !seat.reserved).length;
+    }
+
+    changeSeatCount(delta) {
+        if (!this.seatMap) return;
+
+        const newCount = this.seatCount + delta;
+
+        if (newCount < 0) return;
+        if (newCount > this.availableCount) return;
+        if (newCount < this.selectedSeats.length) return; // deselect a seat first
+
+        this.seatCount = newCount;
+    }
+
+    toggleSeat(seatCode) {
+        if (this.selectedSeats.includes(seatCode)) {
+            this.selectedSeats = this.selectedSeats.filter(code => code !== seatCode);
+        } else {
+            if (this.selectedSeats.length >= this.seatCount) {
+                return; // already selected the chosen number of seats
+            }
+            this.selectedSeats = [...this.selectedSeats, seatCode];
+        }
+    }
+
+    goToCheckout() {
+        window.location.hash = `#/checkout?showingId=${this.showingId}&seats=${this.selectedSeats.join(',')}`;
+    }
+
+    formatShowingDateTime(isoString) {
+        return new Date(isoString).toLocaleString('en-GB', {
+            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+        });
+    }
+
+    renderView() {
+        if (this.loadFailed) {
+            return html`
+                <div class="container py-4">
+                    <div class="alert alert-danger shadow-sm" role="alert">
+                        <h4 class="alert-heading">Unable to load data</h4>
+                        <p class="mb-0">Could not connect to the backend server. Please try again later.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (this.notice) {
+            return html`<div class="container py-4"><div class="alert alert-warning">${this.notice}</div></div>`;
+        }
+
+        if (!this.seatMap) {
+            return html`<div class="container py-4"><p>Loading seats...</p></div>`;
+        }
+
+        return html`
             <div class="container py-4">
                 <div class="d-flex gap-4">
                     <div class="poster-placeholder flex-shrink-0">
                         <span>Place Holder For A Movie Poster</span>
                     </div>
                     <div class="flex-grow-1">
-                        <h1 class="h3 mb-1">${seatMap.movieTitle}</h1>
-                        <p class="text-muted mb-3">${seatMap.auditoriumName} · ${formatShowingDateTime(seatMap.startTime)}</p>
+                        <h1 class="h3 mb-1">${this.seatMap.movieTitle}</h1>
+                        <p class="text-muted mb-3">${this.seatMap.auditoriumName} · ${this.formatShowingDateTime(this.seatMap.startTime)}</p>
 
                         <div class="seat-grid mb-4">
-                            ${seatButtons}
+                            ${this.seatMap.seats.map(seat => html`
+                                <button
+                                    type="button"
+                                    class="seat-button ${seat.reserved ? 'seat-reserved' : 'seat-available'} ${this.selectedSeats.includes(seat.seatCode) ? 'seat-selected' : ''}"
+                                    ?disabled=${seat.reserved}
+                                    @click=${() => this.toggleSeat(seat.seatCode)}
+                                >
+                                    ${seat.seatCode}
+                                </button>
+                            `)}
                         </div>
 
                         <div class="d-flex align-items-center gap-3 mb-4">
                             <span class="fw-semibold">Seats:</span>
-                            <button type="button" id="seat-decrement" class="btn btn-outline-secondary btn-sm">−</button>
-                            <span id="seat-count-display">0</span>
-                            <button type="button" id="seat-increment" class="btn btn-outline-secondary btn-sm">+</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @click=${() => this.changeSeatCount(-1)}>−</button>
+                            <span>${this.seatCount}</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @click=${() => this.changeSeatCount(1)}>+</button>
                         </div>
 
-                        <button type="button" id="checkout-button" class="btn btn-primary" disabled>Checkout</button>
+                        <button type="button" class="btn btn-primary"
+                                ?disabled=${this.seatCount === 0 || this.selectedSeats.length !== this.seatCount}
+                                @click=${this.goToCheckout}>Checkout</button>
                     </div>
                 </div>
             </div>
         `;
-
-    } catch (error) {
-        if (error instanceof HttpError) throw error
-        console.error('Failed to load seat map:', error);
-        return `
-            <div class="container py-4">
-                <div class="alert alert-danger shadow-sm" role="alert">
-                    <h4 class="alert-heading">Unable to load data</h4>
-                    <p class="mb-0">Could not connect to the backend server. Please try again later.</p>
-                </div>
-            </div>
-        `;
     }
 }
 
-export function handleSeatPickerClick(event) {
-    if (event.target.closest('#seat-increment')) {
-        changeSeatCount(1);
-    } else if (event.target.closest('#seat-decrement')) {
-        changeSeatCount(-1);
-    } else if (event.target.closest('.seat-button')) {
-        toggleSeat(event.target.closest('.seat-button'));
-    } else if (event.target.closest('#checkout-button')) {
-        goToCheckout();
-    }
-}
-
-function changeSeatCount(delta) {
-    if (!currentSeatMap) return;
-
-    const availableCount = currentSeatMap.seats.filter(seat => !seat.reserved).length;
-    const newCount = seatCount + delta;
-
-    if (newCount < 0) return;
-    if (newCount > availableCount) return;
-    if (newCount < selectedSeats.length) return; // deselect a seat first
-
-    seatCount = newCount;
-    document.getElementById('seat-count-display').textContent = seatCount;
-    updateCheckoutButtonState();
-}
-
-function toggleSeat(button) {
-    const seatCode = button.dataset.seatCode;
-
-    if (selectedSeats.includes(seatCode)) {
-        selectedSeats = selectedSeats.filter(code => code !== seatCode);
-        button.classList.remove('seat-selected');
-    } else {
-        if (selectedSeats.length >= seatCount) {
-            return; // already selected the chosen number of seats
-        }
-        selectedSeats.push(seatCode);
-        button.classList.add('seat-selected');
-    }
-
-    updateCheckoutButtonState();
-}
-
-function updateCheckoutButtonState() {
-    const checkoutButton = document.getElementById('checkout-button');
-    if (!checkoutButton) return;
-    checkoutButton.disabled = seatCount === 0 || selectedSeats.length !== seatCount;
-}
-
-function goToCheckout() {
-    const seatsParam = selectedSeats.join(',');
-    window.location.hash = `#/checkout?showingId=${currentShowingId}&seats=${seatsParam}`;
-}
-
-function formatShowingDateTime(isoString) {
-    return new Date(isoString).toLocaleString('en-GB', {
-        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-    });
-}
+customElements.define('smartbio-seat-picker', SmartBioSeatPicker);
